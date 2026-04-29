@@ -9,7 +9,7 @@
  * - 結果表示（自然言語サマリ + 次のアクション）
  * - Local LLM (Ollama) 状態表示・AI Orchestration連携
  */
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -20,8 +20,8 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-} from 'react-native';
-import * as Haptics from 'expo-haptics';
+} from "react-native";
+import * as Haptics from "expo-haptics";
 import {
   CliTool,
   CLI_TOOLS,
@@ -32,7 +32,7 @@ import {
   interpretCheckResult,
   parseCliResult,
   maskSecrets,
-} from '@/lib/cli-runner';
+} from "@/lib/cli-runner";
 import {
   orchestrateTask,
   getCategoryLabel,
@@ -40,25 +40,25 @@ import {
   type OrchestrationResult,
   type LocalLlmConfig,
   type OllamaMessage,
-} from '@/lib/local-llm';
-import { CreatorProject } from '@/store/types';
+} from "@/lib/local-llm";
+import { CreatorProject } from "@/store/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ToolsStatus =
-  | 'idle'
-  | 'checking'      // 依存確認中
-  | 'check_failed'  // 依存未導入
-  | 'needs_auth'    // 認証が必要
-  | 'ready'         // 実行可能
-  | 'running'       // 実行中
-  | 'done'          // 完了
-  | 'error'         // エラー
-  | 'cancelled';    // キャンセル済み
+  | "idle"
+  | "checking" // 依存確認中
+  | "check_failed" // 依存未導入
+  | "needs_auth" // 認証が必要
+  | "ready" // 実行可能
+  | "running" // 実行中
+  | "done" // 完了
+  | "error" // エラー
+  | "cancelled"; // キャンセル済み
 
 interface LogEntry {
   id: string;
-  type: 'info' | 'stdout' | 'stderr' | 'system';
+  type: "info" | "stdout" | "stderr" | "system";
   text: string;
   timestamp: number;
 }
@@ -74,9 +74,9 @@ interface ToolsLaneProps {
     opts?: {
       cwd?: string;
       env?: Record<string, string>;
-      onStream?: (type: 'stdout' | 'stderr', data: string) => void;
+      onStream?: (type: "stdout" | "stderr", data: string) => void;
       timeoutMs?: number;
-    }
+    },
   ) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
   /** キャンセル */
   onCancel: () => void;
@@ -99,34 +99,48 @@ export function ToolsLane({
   onTestConnection,
   localLlmConfig,
 }: ToolsLaneProps) {
-  const [selectedTool, setSelectedTool] = useState<CliTool>('claude');
-  const [userInput, setUserInput] = useState('');
-  const [customCommand, setCustomCommand] = useState('');
-  const [targetProject, setTargetProject] = useState<CreatorProject | null>(lastProject);
+  const [selectedTool, setSelectedTool] = useState<CliTool>("claude");
+  const [userInput, setUserInput] = useState("");
+  const [customCommand, setCustomCommand] = useState("");
+  const [targetProject, setTargetProject] = useState<CreatorProject | null>(
+    lastProject,
+  );
   const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const [status, setStatus] = useState<ToolsStatus>('idle');
+  const [status, setStatus] = useState<ToolsStatus>("idle");
   const [checkResult, setCheckResult] = useState<CliCheckResult | null>(null);
   const [runResult, setRunResult] = useState<CliRunResult | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [currentPlan, setCurrentPlan] = useState<CliRunPlan | null>(null);
   const cancelledRef = useRef(false);
-  const [bridgeCheckStatus, setBridgeCheckStatus] = useState<'idle' | 'checking' | 'ok' | 'fail'>('idle');
-  const [_orchestrationResult, setOrchestrationResult] = useState<OrchestrationResult | null>(null);
-  const [localLlmStatus, setLocalLlmStatus] = useState<'idle' | 'thinking' | 'done' | 'error'>('idle');
-  const [conversationHistory, setConversationHistory] = useState<OllamaMessage[]>([]);
+  const [bridgeCheckStatus, setBridgeCheckStatus] = useState<
+    "idle" | "checking" | "ok" | "fail"
+  >("idle");
+  const [_orchestrationResult, setOrchestrationResult] =
+    useState<OrchestrationResult | null>(null);
+  const [localLlmStatus, setLocalLlmStatus] = useState<
+    "idle" | "thinking" | "done" | "error"
+  >("idle");
+  const [conversationHistory, setConversationHistory] = useState<
+    OllamaMessage[]
+  >([]);
 
   const handleBridgeCheck = useCallback(async () => {
     if (!onTestConnection) return;
-    setBridgeCheckStatus('checking');
+    setBridgeCheckStatus("checking");
     const ok = await onTestConnection();
-    setBridgeCheckStatus(ok ? 'ok' : 'fail');
-    setTimeout(() => setBridgeCheckStatus('idle'), 3000);
+    setBridgeCheckStatus(ok ? "ok" : "fail");
+    setTimeout(() => setBridgeCheckStatus("idle"), 3000);
   }, [onTestConnection]);
 
-  const addLog = useCallback((type: LogEntry['type'], text: string) => {
+  const addLog = useCallback((type: LogEntry["type"], text: string) => {
     setLogs((prev) => [
       ...prev,
-      { id: `${Date.now()}-${Math.random()}`, type, text: maskSecrets(text), timestamp: Date.now() },
+      {
+        id: `${Date.now()}-${Math.random()}`,
+        type,
+        text: maskSecrets(text),
+        timestamp: Date.now(),
+      },
     ]);
   }, []);
 
@@ -144,103 +158,120 @@ export function ToolsLane({
     const input = userInput.trim();
     if (!input) return;
 
-    const config = localLlmConfig ?? { baseUrl: 'http://127.0.0.1:11434', model: 'llama3.2:3b', enabled: false };
+    const config = localLlmConfig ?? {
+      baseUrl: "http://127.0.0.1:11434",
+      model: "llama3.2:3b",
+      enabled: false,
+    };
 
-    setLocalLlmStatus('thinking');
+    setLocalLlmStatus("thinking");
     setOrchestrationResult(null);
     clearLogs();
-    addLog('system', `Classifying task: "${input.slice(0, 50)}${input.length > 50 ? '…' : ''}"`);
+    addLog(
+      "system",
+      `Classifying task: "${input.slice(0, 50)}${input.length > 50 ? "…" : ""}"`,
+    );
 
     try {
       const result = await orchestrateTask(input, config, conversationHistory);
       setOrchestrationResult(result);
 
-      if (result.handledBy === 'local_llm' && result.response) {
+      if (result.handledBy === "local_llm" && result.response) {
         // Local LLMが直接回答した場合
-        setLocalLlmStatus('done');
-        addLog('info', `[${getHandlerLabel(result.handledBy)}] ${getCategoryLabel(result.category)}`);
-        addLog('stdout', result.response);
+        setLocalLlmStatus("done");
+        addLog(
+          "info",
+          `[${getHandlerLabel(result.handledBy)}] ${getCategoryLabel(result.category)}`,
+        );
+        addLog("stdout", result.response);
         // 会話履歴に追加
         setConversationHistory((prev) => [
           ...prev,
-          { role: 'user', content: input },
-          { role: 'assistant', content: result.response! },
+          { role: "user", content: input },
+          { role: "assistant", content: result.response! },
         ]);
-        setStatus('done');
+        setStatus("done");
       } else if (result.delegatedCommand) {
         // Claude/Gemini/Termuxに委譲
-        setLocalLlmStatus('done');
-        addLog('info', `[${getHandlerLabel(result.handledBy)}] ${getCategoryLabel(result.category)} → ${result.reasoning}`);
+        setLocalLlmStatus("done");
+        addLog(
+          "info",
+          `[${getHandlerLabel(result.handledBy)}] ${getCategoryLabel(result.category)} → ${result.reasoning}`,
+        );
 
-        if (result.handledBy === 'termux') {
-          // Termux直接実行
-          onSendToTerminal(result.delegatedCommand);
-          addLog('system', `Sent to Terminal: ${result.delegatedCommand}`);
-          setStatus('done');
-        } else {
-          setStatus('running');
-          addLog('system', `Running: ${result.delegatedCommand}`);
-          const execResult = await onRunCommand(result.delegatedCommand);
-          if (execResult.stdout) addLog('stdout', execResult.stdout);
-          if (execResult.stderr) addLog('stderr', execResult.stderr);
-          setStatus(execResult.exitCode === 0 ? 'done' : 'error');
-        }
+        // Send to native terminal (all commands go here now)
+        onSendToTerminal(result.delegatedCommand);
+        addLog("system", `Sent to Terminal: ${result.delegatedCommand}`);
+        setStatus("done");
       }
     } catch (e) {
-      setLocalLlmStatus('error');
-      setStatus('error');
-      addLog('stderr', `Orchestration error: ${e}`);
+      setLocalLlmStatus("error");
+      setStatus("error");
+      addLog("stderr", `Orchestration error: ${e}`);
     }
-  }, [userInput, localLlmConfig, conversationHistory, onRunCommand, onSendToTerminal, clearLogs, addLog]);
+  }, [
+    userInput,
+    localLlmConfig,
+    conversationHistory,
+    onRunCommand,
+    onSendToTerminal,
+    clearLogs,
+    addLog,
+  ]);
 
   // ── Dependency Check ────────────────────────────────────────────────────────
 
   const handleCheck = useCallback(async () => {
     const config = CLI_TOOLS[selectedTool];
-    if (selectedTool === 'custom') {
-      setStatus('ready');
+    if (selectedTool === "custom") {
+      setStatus("ready");
       return;
     }
 
-    setStatus('checking');
+    setStatus("checking");
     clearLogs();
-    addLog('system', `${config.label}Checking availability...`);
+    addLog("system", `${config.label}Checking availability...`);
 
     try {
       const result = await onRunCommand(config.checkCommand);
-      const check = interpretCheckResult(selectedTool, result.exitCode, result.stdout);
+      const check = interpretCheckResult(
+        selectedTool,
+        result.exitCode,
+        result.stdout,
+      );
       setCheckResult(check);
 
       if (!check.available) {
-        setStatus('check_failed');
-        addLog('system', check.message);
+        setStatus("check_failed");
+        addLog("system", check.message);
       } else if (check.needsAuth) {
-        setStatus('needs_auth');
-        addLog('system', check.message);
+        setStatus("needs_auth");
+        addLog("system", check.message);
       } else {
-        setStatus('ready');
-        addLog('system', check.message);
+        setStatus("ready");
+        addLog("system", check.message);
       }
     } catch (e) {
-      setStatus('check_failed');
-      addLog('stderr', `Error during check: ${e}`);
+      setStatus("check_failed");
+      addLog("stderr", `Error during check: ${e}`);
     }
   }, [selectedTool, onRunCommand, clearLogs, addLog]);
 
   // ── Run ─────────────────────────────────────────────────────────────────────
 
   const handleRun = useCallback(async () => {
-    if (!userInput.trim() && selectedTool !== 'custom') return;
+    if (!userInput.trim() && selectedTool !== "custom") return;
 
     const targetPath = targetProject
       ? `~/Projects/${targetProject.path}`
-      : '~/Projects';
+      : "~/Projects";
 
     const plan = buildCliCommand({
       tool: selectedTool,
       userInput: userInput.trim() || customCommand.trim(),
       targetPath,
-      customCommand: selectedTool === 'custom' ? customCommand.trim() : undefined,
+      customCommand:
+        selectedTool === "custom" ? customCommand.trim() : undefined,
     });
     setCurrentPlan(plan);
 
@@ -248,11 +279,15 @@ export function ToolsLane({
     if (plan.requiresConfirmation) {
       const confirmed = await new Promise<boolean>((resolve) => {
         Alert.alert(
-          'Confirm',
-          plan.confirmationMessage ?? 'Execute this operation?',
+          "Confirm",
+          plan.confirmationMessage ?? "Execute this operation?",
           [
-            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'Execute', style: 'destructive', onPress: () => resolve(true) },
+            { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+            {
+              text: "Execute",
+              style: "destructive",
+              onPress: () => resolve(true),
+            },
           ],
         );
       });
@@ -263,13 +298,14 @@ export function ToolsLane({
     if (plan.isInteractiveFallback) {
       const proceed = await new Promise<boolean>((resolve) => {
         Alert.alert(
-          'Interactive mode may be needed',
-          plan.fallbackSuggestion ?? 'This operation may require interactive mode. Continue?',
+          "Interactive mode may be needed",
+          plan.fallbackSuggestion ??
+            "This operation may require interactive mode. Continue?",
           [
-            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'Try anyway', onPress: () => resolve(true) },
+            { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+            { text: "Try anyway", onPress: () => resolve(true) },
             {
-              text: 'Open in Terminal',
+              text: "Open in Terminal",
               onPress: () => {
                 onSendToTerminal(plan.command);
                 resolve(false);
@@ -283,12 +319,12 @@ export function ToolsLane({
 
     // Execute
     cancelledRef.current = false;
-    setStatus('running');
+    setStatus("running");
     clearLogs();
-    addLog('info', plan.naturalDescription);
-    addLog('system', `Running: ${plan.command}`);
+    addLog("info", plan.naturalDescription);
+    addLog("system", `Running: ${plan.command}`);
 
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
@@ -296,8 +332,8 @@ export function ToolsLane({
       const result = await onRunCommand(plan.command);
 
       if (cancelledRef.current) {
-        setStatus('cancelled');
-        addLog('system', 'Cancelled.');
+        setStatus("cancelled");
+        addLog("system", "Cancelled.");
         return;
       }
 
@@ -310,12 +346,12 @@ export function ToolsLane({
       );
       setRunResult(parsed);
 
-      if (result.stdout) addLog('stdout', result.stdout);
-      if (result.stderr) addLog('stderr', result.stderr);
+      if (result.stdout) addLog("stdout", result.stdout);
+      if (result.stderr) addLog("stderr", result.stderr);
 
-      setStatus(parsed.success ? 'done' : 'error');
+      setStatus(parsed.success ? "done" : "error");
 
-      if (Platform.OS !== 'web') {
+      if (Platform.OS !== "web") {
         if (parsed.success) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } else {
@@ -324,31 +360,37 @@ export function ToolsLane({
       }
     } catch (e) {
       if (cancelledRef.current) {
-        setStatus('cancelled');
-        addLog('system', 'Cancelled.');
+        setStatus("cancelled");
+        addLog("system", "Cancelled.");
       } else {
-        setStatus('error');
-        addLog('stderr', `Execution error: ${e}`);
+        setStatus("error");
+        addLog("stderr", `Execution error: ${e}`);
       }
     }
   }, [
-    userInput, customCommand, selectedTool, targetProject,
-    onRunCommand, onSendToTerminal, clearLogs, addLog,
+    userInput,
+    customCommand,
+    selectedTool,
+    targetProject,
+    onRunCommand,
+    onSendToTerminal,
+    clearLogs,
+    addLog,
   ]);
 
   const handleCancel = useCallback(() => {
     cancelledRef.current = true;
     onCancel();
-    setStatus('cancelled');
-    addLog('system', 'Cancelling...');
+    setStatus("cancelled");
+    addLog("system", "Cancelling...");
   }, [onCancel, addLog]);
 
   const handleReset = useCallback(() => {
-    setStatus('idle');
-    setUserInput('');
-    setCustomCommand('');
+    setStatus("idle");
+    setUserInput("");
+    setCustomCommand("");
     setOrchestrationResult(null);
-    setLocalLlmStatus('idle');
+    setLocalLlmStatus("idle");
     clearLogs();
   }, [clearLogs]);
 
@@ -361,9 +403,16 @@ export function ToolsLane({
       {/* Local LLM Status Banner */}
       {isLocalLlmEnabled && (
         <View style={styles.llmBanner}>
-          <View style={[styles.llmDot, localLlmStatus === 'thinking' ? styles.llmDotThinking : styles.llmDotReady]} />
+          <View
+            style={[
+              styles.llmDot,
+              localLlmStatus === "thinking"
+                ? styles.llmDotThinking
+                : styles.llmDotReady,
+            ]}
+          />
           <Text style={styles.llmBannerText}>
-            {localLlmStatus === 'thinking'
+            {localLlmStatus === "thinking"
               ? `Local LLM (${localLlmConfig?.model}) thinking...`
               : `Local LLM (${localLlmConfig?.model}) ready`}
           </Text>
@@ -382,20 +431,30 @@ export function ToolsLane({
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>▸ Select CLI tool</Text>
         <View style={styles.toolRow}>
-          {(['claude', 'gemini', 'custom'] as CliTool[]).map((tool) => (
+          {(["claude", "gemini", "custom"] as CliTool[]).map((tool) => (
             <Pressable
               key={tool}
-              style={[styles.toolBtn, selectedTool === tool && styles.toolBtnActive]}
+              style={[
+                styles.toolBtn,
+                selectedTool === tool && styles.toolBtnActive,
+              ]}
               onPress={() => {
                 setSelectedTool(tool);
-                setStatus('idle');
+                setStatus("idle");
                 clearLogs();
               }}
             >
-              <Text style={[styles.toolBtnText, selectedTool === tool && styles.toolBtnTextActive]}>
+              <Text
+                style={[
+                  styles.toolBtnText,
+                  selectedTool === tool && styles.toolBtnTextActive,
+                ]}
+              >
                 {CLI_TOOLS[tool].label}
               </Text>
-              <Text style={styles.toolBtnDesc}>{CLI_TOOLS[tool].description}</Text>
+              <Text style={styles.toolBtnDesc}>
+                {CLI_TOOLS[tool].description}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -411,9 +470,11 @@ export function ToolsLane({
           <Text style={styles.targetBtnText}>
             {targetProject
               ? `~/Projects/${targetProject.path}`
-              : '~/Projects (no folder selected)'}
+              : "~/Projects (no folder selected)"}
           </Text>
-          <Text style={styles.targetBtnChevron}>{showProjectPicker ? '▲' : '▼'}</Text>
+          <Text style={styles.targetBtnChevron}>
+            {showProjectPicker ? "▲" : "▼"}
+          </Text>
         </Pressable>
 
         {showProjectPicker && (
@@ -425,12 +486,17 @@ export function ToolsLane({
                 setShowProjectPicker(false);
               }}
             >
-              <Text style={styles.projectPickerItemText}>~/Projects (no folder selected)</Text>
+              <Text style={styles.projectPickerItemText}>
+                ~/Projects (no folder selected)
+              </Text>
             </Pressable>
             {projects.slice(0, 20).map((p) => (
               <Pressable
                 key={p.id}
-                style={[styles.projectPickerItem, targetProject?.id === p.id && styles.projectPickerItemActive]}
+                style={[
+                  styles.projectPickerItem,
+                  targetProject?.id === p.id && styles.projectPickerItemActive,
+                ]}
                 onPress={() => {
                   setTargetProject(p);
                   setShowProjectPicker(false);
@@ -441,7 +507,7 @@ export function ToolsLane({
                 </Text>
                 {p.tags && p.tags.length > 0 && (
                   <Text style={styles.projectPickerItemTags}>
-                    {p.tags.slice(0, 3).join(', ')}
+                    {p.tags.slice(0, 3).join(", ")}
                   </Text>
                 )}
               </Pressable>
@@ -453,9 +519,11 @@ export function ToolsLane({
       {/* Input */}
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>
-          {selectedTool === 'custom' ? '▸ Enter command' : '▸ Describe what you want (natural language OK)'}
+          {selectedTool === "custom"
+            ? "▸ Enter command"
+            : "▸ Describe what you want (natural language OK)"}
         </Text>
-        {selectedTool === 'custom' ? (
+        {selectedTool === "custom" ? (
           <TextInput
             style={styles.input}
             value={customCommand}
@@ -464,7 +532,7 @@ export function ToolsLane({
             placeholderTextColor="#374151"
             multiline
             numberOfLines={2}
-            editable={status !== 'running'}
+            editable={status !== "running"}
             returnKeyType="done"
           />
         ) : (
@@ -473,14 +541,14 @@ export function ToolsLane({
             value={userInput}
             onChangeText={setUserInput}
             placeholder={
-              selectedTool === 'claude'
-                ? 'e.g. Write a README for this folder'
-                : 'e.g. Fix bugs in this code'
+              selectedTool === "claude"
+                ? "e.g. Write a README for this folder"
+                : "e.g. Fix bugs in this code"
             }
             placeholderTextColor="#374151"
             multiline
             numberOfLines={3}
-            editable={status !== 'running'}
+            editable={status !== "running"}
             returnKeyType="done"
           />
         )}
@@ -488,18 +556,18 @@ export function ToolsLane({
 
       {/* Action Buttons */}
       <View style={styles.actionRow}>
-        {status === 'idle' && (
+        {status === "idle" && (
           <Pressable
             style={[styles.actionBtn, styles.checkBtn]}
             onPress={handleCheck}
           >
             <Text style={styles.actionBtnText}>
-              {selectedTool === 'custom' ? '▶ Run' : '◎ Check & Run'}
+              {selectedTool === "custom" ? "▶ Run" : "◎ Check & Run"}
             </Text>
           </Pressable>
         )}
 
-        {status === 'ready' && (
+        {status === "ready" && (
           <>
             <Pressable
               style={[styles.actionBtn, styles.runBtn]}
@@ -509,37 +577,36 @@ export function ToolsLane({
             </Pressable>
             <Pressable
               style={[styles.actionBtn, styles.resetBtn]}
-              onPress={() => setStatus('idle')}
+              onPress={() => setStatus("idle")}
             >
               <Text style={styles.resetBtnText}>✕ Reset</Text>
             </Pressable>
           </>
         )}
 
-        {(status === 'check_failed' || status === 'needs_auth') && checkResult && (
-          <>
-            {checkResult.setupCommands.length > 0 && (
+        {(status === "check_failed" || status === "needs_auth") &&
+          checkResult && (
+            <>
+              {checkResult.setupCommands.length > 0 && (
+                <Pressable
+                  style={[styles.actionBtn, styles.setupBtn]}
+                  onPress={() => {
+                    onSendToTerminal(checkResult.setupCommands[0]);
+                  }}
+                >
+                  <Text style={styles.actionBtnText}>↗ Setup in Terminal</Text>
+                </Pressable>
+              )}
               <Pressable
-                style={[styles.actionBtn, styles.setupBtn]}
-                onPress={() => {
-                  onSendToTerminal(checkResult.setupCommands[0]);
-                }}
+                style={[styles.actionBtn, styles.resetBtn]}
+                onPress={() => setStatus("idle")}
               >
-                <Text style={styles.actionBtnText}>
-                  ↗ Setup in Terminal
-                </Text>
+                <Text style={styles.resetBtnText}>← Back</Text>
               </Pressable>
-            )}
-            <Pressable
-              style={[styles.actionBtn, styles.resetBtn]}
-              onPress={() => setStatus('idle')}
-            >
-              <Text style={styles.resetBtnText}>← Back</Text>
-            </Pressable>
-          </>
-        )}
+            </>
+          )}
 
-        {status === 'running' && (
+        {status === "running" && (
           <Pressable
             style={[styles.actionBtn, styles.cancelBtn]}
             onPress={handleCancel}
@@ -548,7 +615,9 @@ export function ToolsLane({
           </Pressable>
         )}
 
-        {(status === 'done' || status === 'error' || status === 'cancelled') && (
+        {(status === "done" ||
+          status === "error" ||
+          status === "cancelled") && (
           <Pressable
             style={[styles.actionBtn, styles.resetBtn]}
             onPress={handleReset}
@@ -559,14 +628,14 @@ export function ToolsLane({
       </View>
 
       {/* Status / Logs */}
-      {status === 'checking' && (
+      {status === "checking" && (
         <View style={styles.statusRow}>
           <ActivityIndicator size="small" color="#00D4AA" />
           <Text style={styles.statusText}>Checking...</Text>
         </View>
       )}
 
-      {status === 'running' && (
+      {status === "running" && (
         <View style={styles.statusRow}>
           <ActivityIndicator size="small" color="#F59E0B" />
           <Text style={styles.statusText}>Running...</Text>
@@ -583,9 +652,9 @@ export function ToolsLane({
                 key={entry.id}
                 style={[
                   styles.logLine,
-                  entry.type === 'stderr' && styles.logLineError,
-                  entry.type === 'system' && styles.logLineSystem,
-                  entry.type === 'info' && styles.logLineInfo,
+                  entry.type === "stderr" && styles.logLineError,
+                  entry.type === "system" && styles.logLineSystem,
+                  entry.type === "info" && styles.logLineInfo,
                 ]}
               >
                 {entry.text}
@@ -596,10 +665,15 @@ export function ToolsLane({
       )}
 
       {/* Result */}
-      {runResult && (status === 'done' || status === 'error') && (
-        <View style={[styles.resultContainer, !runResult.success && styles.resultContainerError]}>
+      {runResult && (status === "done" || status === "error") && (
+        <View
+          style={[
+            styles.resultContainer,
+            !runResult.success && styles.resultContainerError,
+          ]}
+        >
           <Text style={styles.resultTitle}>
-            {runResult.success ? '✓ Done' : '✕ Error'}
+            {runResult.success ? "✓ Done" : "✕ Error"}
           </Text>
           <Text style={styles.resultSummary}>{runResult.naturalSummary}</Text>
 
@@ -607,7 +681,10 @@ export function ToolsLane({
             <View style={styles.resultFiles}>
               <Text style={styles.resultFilesLabel}>Changed files:</Text>
               {runResult.changedFiles.map((f, i) => (
-                <Text key={i} style={styles.resultFileItem}>  • {f}</Text>
+                <Text key={i} style={styles.resultFileItem}>
+                  {" "}
+                  • {f}
+                </Text>
               ))}
             </View>
           )}
@@ -616,7 +693,10 @@ export function ToolsLane({
             <View style={styles.resultNext}>
               <Text style={styles.resultNextLabel}>Next steps:</Text>
               {runResult.nextActions.map((action, i) => (
-                <Text key={i} style={styles.resultNextItem}>  {i + 1}. {action}</Text>
+                <Text key={i} style={styles.resultNextItem}>
+                  {" "}
+                  {i + 1}. {action}
+                </Text>
               ))}
             </View>
           )}
@@ -637,7 +717,9 @@ export function ToolsLane({
       <View style={[styles.connectionBanner, styles.connectionBannerOk]}>
         <View style={styles.connectionBannerLeft}>
           <View style={[styles.connectionDot, styles.connectionDotOk]} />
-          <Text style={[styles.connectionBannerText, styles.connectionBannerTextOk]}>
+          <Text
+            style={[styles.connectionBannerText, styles.connectionBannerTextOk]}
+          >
             Terminal connected (native)
           </Text>
         </View>
@@ -659,50 +741,50 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#6B7280',
+    fontFamily: "monospace",
+    color: "#6B7280",
     marginBottom: 6,
     letterSpacing: 0.5,
   },
   toolRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   toolBtn: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: "#111827",
     borderWidth: 1,
-    borderColor: '#1F2937',
+    borderColor: "#1F2937",
     borderRadius: 6,
     padding: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   toolBtnActive: {
-    borderColor: '#00D4AA',
-    backgroundColor: '#0D2B26',
+    borderColor: "#00D4AA",
+    backgroundColor: "#0D2B26",
   },
   toolBtnText: {
     fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#6B7280',
-    fontWeight: '600',
+    fontFamily: "monospace",
+    color: "#6B7280",
+    fontWeight: "600",
   },
   toolBtnTextActive: {
-    color: '#00D4AA',
+    color: "#00D4AA",
   },
   toolBtnDesc: {
     fontSize: 9,
-    fontFamily: 'monospace',
-    color: '#374151',
+    fontFamily: "monospace",
+    color: "#374151",
     marginTop: 2,
-    textAlign: 'center',
+    textAlign: "center",
   },
   targetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#111827',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#111827",
     borderWidth: 1,
-    borderColor: '#1F2937',
+    borderColor: "#1F2937",
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -710,17 +792,17 @@ const styles = StyleSheet.create({
   targetBtnText: {
     flex: 1,
     fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#9CA3AF',
+    fontFamily: "monospace",
+    color: "#9CA3AF",
   },
   targetBtnChevron: {
     fontSize: 10,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   projectPicker: {
-    backgroundColor: '#0D0D0D',
+    backgroundColor: "#0D0D0D",
     borderWidth: 1,
-    borderColor: '#1F2937',
+    borderColor: "#1F2937",
     borderRadius: 6,
     marginTop: 4,
     maxHeight: 160,
@@ -729,37 +811,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#1A1A1A',
+    borderBottomColor: "#1A1A1A",
   },
   projectPickerItemActive: {
-    backgroundColor: '#0D2B26',
+    backgroundColor: "#0D2B26",
   },
   projectPickerItemText: {
     fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#9CA3AF',
+    fontFamily: "monospace",
+    color: "#9CA3AF",
   },
   projectPickerItemTags: {
     fontSize: 9,
-    fontFamily: 'monospace',
-    color: '#4B5563',
+    fontFamily: "monospace",
+    color: "#4B5563",
     marginTop: 2,
   },
   input: {
-    backgroundColor: '#111827',
+    backgroundColor: "#111827",
     borderWidth: 1,
-    borderColor: '#1F2937',
+    borderColor: "#1F2937",
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 13,
-    fontFamily: 'monospace',
-    color: '#E5E7EB',
+    fontFamily: "monospace",
+    color: "#E5E7EB",
     minHeight: 60,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   actionRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginBottom: 12,
   },
@@ -767,57 +849,57 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: 6,
-    alignItems: 'center',
+    alignItems: "center",
   },
   checkBtn: {
-    backgroundColor: '#1F3A35',
+    backgroundColor: "#1F3A35",
     borderWidth: 1,
-    borderColor: '#00D4AA',
+    borderColor: "#00D4AA",
   },
   runBtn: {
-    backgroundColor: '#00D4AA',
+    backgroundColor: "#00D4AA",
   },
   setupBtn: {
-    backgroundColor: '#1F2937',
+    backgroundColor: "#1F2937",
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
   },
   cancelBtn: {
-    backgroundColor: '#7F1D1D',
+    backgroundColor: "#7F1D1D",
     borderWidth: 1,
-    borderColor: '#EF4444',
+    borderColor: "#EF4444",
   },
   resetBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: "#111827",
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: "#374151",
   },
   actionBtnText: {
     fontSize: 12,
-    fontFamily: 'monospace',
-    color: '#E5E7EB',
-    fontWeight: '600',
+    fontFamily: "monospace",
+    color: "#E5E7EB",
+    fontWeight: "600",
   },
   resetBtnText: {
     fontSize: 12,
-    fontFamily: 'monospace',
-    color: '#6B7280',
+    fontFamily: "monospace",
+    color: "#6B7280",
   },
   statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 8,
   },
   statusText: {
     fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#9CA3AF',
+    fontFamily: "monospace",
+    color: "#9CA3AF",
   },
   logContainer: {
-    backgroundColor: '#0A0A0A',
+    backgroundColor: "#0A0A0A",
     borderWidth: 1,
-    borderColor: '#1A1A1A',
+    borderColor: "#1A1A1A",
     borderRadius: 6,
     padding: 8,
     marginBottom: 12,
@@ -825,8 +907,8 @@ const styles = StyleSheet.create({
   },
   logHeader: {
     fontSize: 9,
-    fontFamily: 'monospace',
-    color: '#4B5563',
+    fontFamily: "monospace",
+    color: "#4B5563",
     marginBottom: 4,
   },
   logScroll: {
@@ -834,43 +916,43 @@ const styles = StyleSheet.create({
   },
   logLine: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#9CA3AF',
+    fontFamily: "monospace",
+    color: "#9CA3AF",
     lineHeight: 16,
   },
   logLineError: {
-    color: '#F87171',
+    color: "#F87171",
   },
   logLineSystem: {
-    color: '#6B7280',
-    fontStyle: 'italic',
+    color: "#6B7280",
+    fontStyle: "italic",
   },
   logLineInfo: {
-    color: '#00D4AA',
+    color: "#00D4AA",
   },
   resultContainer: {
-    backgroundColor: '#0D2B26',
+    backgroundColor: "#0D2B26",
     borderWidth: 1,
-    borderColor: '#00D4AA',
+    borderColor: "#00D4AA",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
   },
   resultContainerError: {
-    backgroundColor: '#1C0A0A',
-    borderColor: '#EF4444',
+    backgroundColor: "#1C0A0A",
+    borderColor: "#EF4444",
   },
   resultTitle: {
     fontSize: 13,
-    fontFamily: 'monospace',
-    color: '#00D4AA',
-    fontWeight: '700',
+    fontFamily: "monospace",
+    color: "#00D4AA",
+    fontWeight: "700",
     marginBottom: 6,
   },
   resultSummary: {
     fontSize: 12,
-    fontFamily: 'monospace',
-    color: '#D1FAE5',
+    fontFamily: "monospace",
+    color: "#D1FAE5",
     lineHeight: 18,
     marginBottom: 8,
   },
@@ -879,14 +961,14 @@ const styles = StyleSheet.create({
   },
   resultFilesLabel: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#6B7280',
+    fontFamily: "monospace",
+    color: "#6B7280",
     marginBottom: 2,
   },
   resultFileItem: {
     fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#9CA3AF',
+    fontFamily: "monospace",
+    color: "#9CA3AF",
     lineHeight: 16,
   },
   resultNext: {
@@ -894,50 +976,50 @@ const styles = StyleSheet.create({
   },
   resultNextLabel: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#6B7280',
+    fontFamily: "monospace",
+    color: "#6B7280",
     marginBottom: 2,
   },
   resultNextItem: {
     fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#9CA3AF',
+    fontFamily: "monospace",
+    color: "#9CA3AF",
     lineHeight: 16,
   },
   terminalBtn: {
     marginTop: 8,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    backgroundColor: '#111827',
+    backgroundColor: "#111827",
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: "#374151",
     borderRadius: 4,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   terminalBtnText: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#9CA3AF',
+    fontFamily: "monospace",
+    color: "#9CA3AF",
   },
   warningBox: {
-    backgroundColor: '#1C1700',
+    backgroundColor: "#1C1700",
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
     borderRadius: 6,
     padding: 10,
     marginBottom: 12,
   },
   warningText: {
     fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#FCD34D',
+    fontFamily: "monospace",
+    color: "#FCD34D",
     lineHeight: 16,
   },
   // ─ Connection Banner ─
   connectionBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -945,16 +1027,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   connectionBannerOk: {
-    backgroundColor: '#0D2B26',
-    borderColor: '#00D4AA',
+    backgroundColor: "#0D2B26",
+    borderColor: "#00D4AA",
   },
   connectionBannerOff: {
-    backgroundColor: '#1C1700',
-    borderColor: '#F59E0B',
+    backgroundColor: "#1C1700",
+    borderColor: "#F59E0B",
   },
   connectionBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   connectionDot: {
@@ -963,41 +1045,41 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   connectionDotOk: {
-    backgroundColor: '#00D4AA',
+    backgroundColor: "#00D4AA",
   },
   connectionDotOff: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: "#F59E0B",
   },
   connectionBannerText: {
     fontSize: 11,
-    fontFamily: 'monospace',
-    fontWeight: '600',
+    fontFamily: "monospace",
+    fontWeight: "600",
   },
   connectionBannerTextOk: {
-    color: '#00D4AA',
+    color: "#00D4AA",
   },
   connectionBannerTextOff: {
-    color: '#FCD34D',
+    color: "#FCD34D",
   },
   bridgeCheckBtn: {
-    backgroundColor: '#1F2937',
+    backgroundColor: "#1F2937",
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
     borderRadius: 4,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   bridgeCheckBtnText: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#FCD34D',
-    fontWeight: '600',
+    fontFamily: "monospace",
+    color: "#FCD34D",
+    fontWeight: "600",
   },
   // ─ Setup Guide ─
   setupGuide: {
-    backgroundColor: '#0D0D0D',
+    backgroundColor: "#0D0D0D",
     borderWidth: 1,
-    borderColor: '#1F2937',
+    borderColor: "#1F2937",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -1005,42 +1087,42 @@ const styles = StyleSheet.create({
   },
   setupGuideTitle: {
     fontSize: 12,
-    fontFamily: 'monospace',
-    color: '#E8E8E8',
-    fontWeight: '700',
+    fontFamily: "monospace",
+    color: "#E8E8E8",
+    fontWeight: "700",
     marginBottom: 4,
   },
   setupGuideStep: {
     fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#9CA3AF',
+    fontFamily: "monospace",
+    color: "#9CA3AF",
   },
   setupGuideCmd: {
-    backgroundColor: '#111827',
+    backgroundColor: "#111827",
     borderRadius: 4,
     padding: 8,
     marginVertical: 2,
   },
   setupGuideCmdText: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#00D4AA',
+    fontFamily: "monospace",
+    color: "#00D4AA",
     lineHeight: 16,
   },
   setupGuideNote: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#6B7280',
+    fontFamily: "monospace",
+    color: "#6B7280",
     lineHeight: 15,
     marginTop: 2,
   },
   // ─ Local LLM Banner ─
   llmBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1A0D2E',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1A0D2E",
     borderWidth: 1,
-    borderColor: '#A78BFA44',
+    borderColor: "#A78BFA44",
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 7,
@@ -1053,28 +1135,28 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   llmDotReady: {
-    backgroundColor: '#A78BFA',
+    backgroundColor: "#A78BFA",
   },
   llmDotThinking: {
-    backgroundColor: '#FBBF24',
+    backgroundColor: "#FBBF24",
   },
   llmBannerText: {
     flex: 1,
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#A78BFA',
+    fontFamily: "monospace",
+    color: "#A78BFA",
   },
   llmClearBtn: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: '#2D1A4A',
+    backgroundColor: "#2D1A4A",
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#A78BFA44',
+    borderColor: "#A78BFA44",
   },
   llmClearBtnText: {
     fontSize: 9,
-    fontFamily: 'monospace',
-    color: '#A78BFA',
+    fontFamily: "monospace",
+    color: "#A78BFA",
   },
 });

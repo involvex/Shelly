@@ -24,24 +24,26 @@ const config: ExpoConfig & { android?: any } = {
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
-    "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",
       backgroundColor: "#000000",
     },
-    edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
     // usesCleartextTraffic now handled by plugins/with-android-security.js (localhost only)
-    permissions: ["POST_NOTIFICATIONS", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_SPECIAL_USE"],
+    permissions: [
+      "POST_NOTIFICATIONS",
+      "FOREGROUND_SERVICE",
+      "FOREGROUND_SERVICE_SPECIAL_USE",
+    ],
     intentFilters: [
       {
         action: "VIEW",
@@ -64,13 +66,19 @@ const config: ExpoConfig & { android?: any } = {
   plugins: [
     "expo-dev-client",
     "expo-router",
+    "expo-asset",
+    "expo-font",
+    "expo-image",
+    "expo-secure-store",
+    "expo-web-browser",
     "./plugins/with-multi-window",
     "./plugins/with-android-security",
     "./plugins/with-terminal-service",
     [
       "expo-audio",
       {
-        microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",
+        microphonePermission:
+          "Allow $(PRODUCT_NAME) to access your microphone.",
       },
     ],
     [
@@ -108,9 +116,9 @@ const config: ExpoConfig & { android?: any } = {
   },
   extra: {
     eas: {
-      projectId: "e0d124cb-e18f-46c4-aca2-e19e48ba04fc",
+      "projectId": "3121f9b2-d320-4573-8953-99784c8909c7"
     },
-    shellyPro: process.env.SHELLY_PRO === 'true',
+    shellyPro: process.env.SHELLY_PRO === "true",
   },
   experiments: {
     typedRoutes: true,

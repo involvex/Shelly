@@ -26,14 +26,14 @@ interface Props {
   onComplete: (data: ActionsWizardData) => void;
 }
 
-const ACTION_OPTIONS: Array<{ key: ActionKind; icon: string }> = [
+const ACTION_OPTIONS: { key: ActionKind; icon: string }[] = [
   { key: 'build', icon: 'build' },
   { key: 'test', icon: 'science' },
   { key: 'deploy', icon: 'cloud-upload' },
   { key: 'release', icon: 'new-releases' },
 ];
 
-const TRIGGER_OPTIONS: Array<{ key: TriggerKind; icon: string }> = [
+const TRIGGER_OPTIONS: { key: TriggerKind; icon: string }[] = [
   { key: 'push', icon: 'publish' },
   { key: 'daily', icon: 'schedule' },
   { key: 'manual', icon: 'touch-app' },

@@ -1,13 +1,23 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { WebView, type WebViewMessageEvent } from 'react-native-webview';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import * as Linking from 'expo-linking';
-import * as Haptics from 'expo-haptics';
-import { useTheme } from '@/hooks/use-theme';
-import { withAlpha } from '@/lib/theme-utils';
-import { getClickToEditScript, buildSetEditModeMessage, type SelectedElement } from '@/lib/click-to-edit';
-import { EditSheet } from '@/components/chat/EditSheet';
+import React, { useRef, useState, useCallback } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { WebView, type WebViewMessageEvent } from "react-native-webview";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import * as Linking from "expo-linking";
+import * as Haptics from "expo-haptics";
+import { useTheme } from "@/hooks/use-theme";
+import { withAlpha } from "@/lib/theme-utils";
+import {
+  getClickToEditScript,
+  buildSetEditModeMessage,
+  type SelectedElement,
+} from "@/lib/click-to-edit";
+import { EditSheet } from "@/components/chat/EditSheet";
 
 interface WebTabProps {
   url: string | null;
@@ -21,7 +31,56 @@ export function WebTab({ url, onClose, onEditSubmit }: WebTabProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
+  const [selectedElement, setSelectedElement] =
+    useState<SelectedElement | null>(null);
+
+  const shortUrl = url?.replace(/^https?:\/\//, "") ?? "";
+
+  const handleReload = useCallback(() => {
+    setError(false);
+    setLoading(true);
+    webViewRef.current?.reload();
+  }, []);
+
+  const handleOpenExternal = useCallback(() => {
+    if (url) Linking.openURL(url);
+  }, [url]);
+
+  const toggleEditMode = useCallback(() => {
+    const next = !editMode;
+    setEditMode(next);
+    if (!next) setSelectedElement(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    webViewRef.current?.postMessage(buildSetEditModeMessage(next));
+  }, [editMode]);
+
+  const handleWebViewMessage = useCallback((event: WebViewMessageEvent) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === "ELEMENT_SELECTED") {
+        setSelectedElement({
+          selector: data.selector,
+          tagName: data.tagName,
+          text: data.text,
+          currentStyles: data.currentStyles,
+          rect: data.rect,
+        });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch {}
+  }, []);
+
+  const handleEditSubmit = useCallback(
+    (prompt: string) => {
+      onEditSubmit?.(prompt);
+      setSelectedElement(null);
+    },
+    [onEditSubmit],
+  );
+
+  const handleEditClose = useCallback(() => {
+    setSelectedElement(null);
+  }, []);
 
   // Empty state when no URL
   if (!url) {
@@ -37,57 +96,20 @@ export function WebTab({ url, onClose, onEditSubmit }: WebTabProps) {
     );
   }
 
-  const shortUrl = url.replace(/^https?:\/\//, '');
-
-  const handleReload = useCallback(() => {
-    setError(false);
-    setLoading(true);
-    webViewRef.current?.reload();
-  }, []);
-
-  const handleOpenExternal = useCallback(() => {
-    Linking.openURL(url);
-  }, [url]);
-
-  const toggleEditMode = useCallback(() => {
-    const next = !editMode;
-    setEditMode(next);
-    if (!next) setSelectedElement(null);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    webViewRef.current?.postMessage(buildSetEditModeMessage(next));
-  }, [editMode]);
-
-  const handleWebViewMessage = useCallback((event: WebViewMessageEvent) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'ELEMENT_SELECTED') {
-        setSelectedElement({
-          selector: data.selector,
-          tagName: data.tagName,
-          text: data.text,
-          currentStyles: data.currentStyles,
-          rect: data.rect,
-        });
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    } catch {}
-  }, []);
-
-  const handleEditSubmit = useCallback((prompt: string) => {
-    onEditSubmit?.(prompt);
-    setSelectedElement(null);
-  }, [onEditSubmit]);
-
-  const handleEditClose = useCallback(() => {
-    setSelectedElement(null);
-  }, []);
-
   return (
     <View style={[styles.container, { backgroundColor: c.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: c.surfaceHigh, borderBottomColor: c.border }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: c.surfaceHigh, borderBottomColor: c.border },
+        ]}
+      >
         <MaterialIcons name="language" size={14} color={c.accent} />
-        <Text style={[styles.headerUrl, { color: c.foreground }]} numberOfLines={1}>
+        <Text
+          style={[styles.headerUrl, { color: c.foreground }]}
+          numberOfLines={1}
+        >
           {shortUrl}
         </Text>
         <View style={styles.headerActions}>
@@ -95,14 +117,32 @@ export function WebTab({ url, onClose, onEditSubmit }: WebTabProps) {
           <Pressable
             onPress={toggleEditMode}
             hitSlop={8}
-            style={[styles.headerBtn, editMode && { backgroundColor: withAlpha(c.accent, 0.2), borderRadius: 4 }]}
+            style={[
+              styles.headerBtn,
+              editMode && {
+                backgroundColor: withAlpha(c.accent, 0.2),
+                borderRadius: 4,
+              },
+            ]}
           >
-            <MaterialIcons name="touch-app" size={16} color={editMode ? c.accent : c.muted} />
+            <MaterialIcons
+              name="touch-app"
+              size={16}
+              color={editMode ? c.accent : c.muted}
+            />
           </Pressable>
-          <Pressable onPress={handleReload} hitSlop={8} style={styles.headerBtn}>
+          <Pressable
+            onPress={handleReload}
+            hitSlop={8}
+            style={styles.headerBtn}
+          >
             <MaterialIcons name="refresh" size={16} color={c.muted} />
           </Pressable>
-          <Pressable onPress={handleOpenExternal} hitSlop={8} style={styles.headerBtn}>
+          <Pressable
+            onPress={handleOpenExternal}
+            hitSlop={8}
+            style={styles.headerBtn}
+          >
             <MaterialIcons name="open-in-new" size={16} color={c.muted} />
           </Pressable>
         </View>
@@ -110,7 +150,12 @@ export function WebTab({ url, onClose, onEditSubmit }: WebTabProps) {
 
       {/* Edit mode banner */}
       {editMode && (
-        <View style={[styles.editBanner, { backgroundColor: withAlpha(c.accent, 0.1) }]}>
+        <View
+          style={[
+            styles.editBanner,
+            { backgroundColor: withAlpha(c.accent, 0.1) },
+          ]}
+        >
           <Text style={[styles.editBannerText, { color: c.accent }]}>
             Edit Mode: tap an element to modify
           </Text>
@@ -128,7 +173,9 @@ export function WebTab({ url, onClose, onEditSubmit }: WebTabProps) {
             onPress={handleReload}
             style={[styles.retryBtn, { backgroundColor: c.accent }]}
           >
-            <Text style={[styles.retryText, { color: c.background }]}>Retry</Text>
+            <Text style={[styles.retryText, { color: c.background }]}>
+              Retry
+            </Text>
           </Pressable>
         </View>
       ) : (
@@ -138,15 +185,27 @@ export function WebTab({ url, onClose, onEditSubmit }: WebTabProps) {
           style={styles.webview}
           onLoadStart={() => setLoading(true)}
           onLoadEnd={() => setLoading(false)}
-          onError={() => { setError(true); setLoading(false); }}
-          onHttpError={() => { setError(true); setLoading(false); }}
+          onError={() => {
+            setError(true);
+            setLoading(false);
+          }}
+          onHttpError={() => {
+            setError(true);
+            setLoading(false);
+          }}
           onMessage={handleWebViewMessage}
           injectedJavaScript={getClickToEditScript()}
           javaScriptEnabled
           domStorageEnabled
           startInLoadingState
           renderLoading={() => (
-            <View style={[StyleSheet.absoluteFill, styles.loadingContainer, { backgroundColor: c.background }]}>
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                styles.loadingContainer,
+                { backgroundColor: c.background },
+              ]}
+            >
               <ActivityIndicator size="small" color={c.accent} />
             </View>
           )}
@@ -174,8 +233,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderBottomWidth: 1,
@@ -183,11 +242,11 @@ const styles = StyleSheet.create({
   },
   headerUrl: {
     flex: 1,
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
     fontSize: 11,
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 4,
   },
   headerBtn: {
@@ -199,19 +258,19 @@ const styles = StyleSheet.create({
   },
   editBannerText: {
     fontSize: 11,
-    fontFamily: 'monospace',
-    fontWeight: '600',
+    fontFamily: "monospace",
+    fontWeight: "600",
   },
   webview: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingBar: {
-    position: 'absolute',
+    position: "absolute",
     top: 38,
     left: 0,
     right: 0,
@@ -219,12 +278,12 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: 12,
   },
   errorText: {
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
     fontSize: 13,
   },
   retryBtn: {
@@ -234,18 +293,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   retryText: {
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   placeholder: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: 12,
   },
   placeholderText: {
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
     fontSize: 13,
   },
 });

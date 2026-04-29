@@ -42,8 +42,8 @@ Open an issue tagged `enhancement`. Code quality improvements, refactoring, and 
 ```bash
 git clone https://github.com/RYOITABASHI/Shelly.git
 cd Shelly
-pnpm install
-pnpm start
+bun install
+bun start
 ```
 
 ### Project structure

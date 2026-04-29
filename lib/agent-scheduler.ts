@@ -3,8 +3,8 @@
  * Primary: AlarmManager (via native module).
  * Fallback: crond (Termux crontab).
  */
-import { Agent } from '@/store/types';
-import TerminalEmulator from '@/modules/terminal-emulator/src/TerminalEmulatorModule';
+import { Agent } from "@/store/types";
+import { TerminalEmulator } from "@/lib/native-module-loader";
 
 function cronToIntervalMs(cron: string): number | null {
   const parts = cron.trim().split(/\s+/);
@@ -13,11 +13,23 @@ function cronToIntervalMs(cron: string): number | null {
   const [min, hour, dom, mon, dow] = parts;
 
   const everyMinMatch = min.match(/^\*\/(\d+)$/);
-  if (everyMinMatch && hour === '*' && dom === '*' && mon === '*' && dow === '*') {
+  if (
+    everyMinMatch &&
+    hour === "*" &&
+    dom === "*" &&
+    mon === "*" &&
+    dow === "*"
+  ) {
     return parseInt(everyMinMatch[1]) * 60 * 1000;
   }
 
-  if (/^\d+$/.test(min) && /^\d+$/.test(hour) && dom === '*' && mon === '*' && dow === '*') {
+  if (
+    /^\d+$/.test(min) &&
+    /^\d+$/.test(hour) &&
+    dom === "*" &&
+    mon === "*" &&
+    dow === "*"
+  ) {
     return 24 * 60 * 60 * 1000;
   }
 

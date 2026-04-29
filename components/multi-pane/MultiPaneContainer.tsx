@@ -1,9 +1,13 @@
-import React, { useCallback, useRef } from 'react';
-import { View, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useMultiPaneStore, type PaneNode, type PaneSplit } from '@/hooks/use-multi-pane';
-import { PaneSlot } from './PaneSlot';
-import { colors as C } from '@/theme.config';
+import React, { useCallback, useRef } from "react";
+import { View, StyleSheet, LayoutChangeEvent } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import {
+  useMultiPaneStore,
+  type PaneNode,
+  type PaneSplit,
+} from "@/hooks/use-multi-pane";
+import { PaneSlot } from "./PaneSlot";
+import { colors as C } from "@/theme.config";
 
 /** Draggable divider between two panes */
 function Divider({
@@ -45,10 +49,20 @@ function Divider({
 
 /** Recursively render the pane tree */
 function PaneTreeNode({ node }: { node: PaneNode }) {
-  const { setLeafTab, splitPane, removePane, root, maxPanes } = useMultiPaneStore();
+  const { setLeafTab, splitPane, removePane, root, maxPanes } =
+    useMultiPaneStore();
   const containerSize = useRef(0);
+  const isSplit = node.type === "split";
+  const isHorizontal = isSplit && node.direction === "horizontal";
+  const onLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const { width, height } = e.nativeEvent.layout;
+      containerSize.current = isHorizontal ? width : height;
+    },
+    [isHorizontal],
+  );
 
-  if (node.type === 'leaf') {
+  if (node.type === "leaf") {
     const leafCount = root ? countLeavesQuick(root) : 1;
     return (
       <PaneSlot
@@ -56,19 +70,12 @@ function PaneTreeNode({ node }: { node: PaneNode }) {
         tab={node.tab}
         onChangeTab={(tab) => setLeafTab(node.id, tab)}
         onRemove={() => removePane(node.id)}
-        onSplitH={(tab) => splitPane(node.id, 'horizontal', tab)}
-        onSplitV={(tab) => splitPane(node.id, 'vertical', tab)}
+        onSplitH={(tab) => splitPane(node.id, "horizontal", tab)}
+        onSplitV={(tab) => splitPane(node.id, "vertical", tab)}
         canSplit={leafCount < maxPanes}
       />
     );
   }
-
-  const isHorizontal = node.direction === 'horizontal';
-
-  const onLayout = useCallback((e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    containerSize.current = isHorizontal ? width : height;
-  }, [isHorizontal]);
 
   return (
     <View
@@ -91,8 +98,10 @@ function PaneTreeNode({ node }: { node: PaneNode }) {
 }
 
 function countLeavesQuick(node: PaneNode): number {
-  if (node.type === 'leaf') return 1;
-  return countLeavesQuick(node.children[0]) + countLeavesQuick(node.children[1]);
+  if (node.type === "leaf") return 1;
+  return (
+    countLeavesQuick(node.children[0]) + countLeavesQuick(node.children[1])
+  );
 }
 
 export function MultiPaneContainer() {
@@ -116,10 +125,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   splitH: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   splitV: {
-    flexDirection: 'column',
+    flexDirection: "column",
   },
   dividerV: {
     width: 3,

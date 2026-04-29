@@ -1,9 +1,12 @@
-import { requireNativeViewManager } from 'expo-modules-core';
-import { ViewProps } from 'react-native';
+import React from "react";
+import { requireNativeViewManager } from "expo-modules-core";
+import { Platform, View, ViewProps } from "react-native";
 
-export type FontFamily = 'jetbrains-mono' | 'fira-code' | 'pixel-mplus';
+const isAndroid = Platform.OS === "android";
 
-export type CursorShape = 'block' | 'underline' | 'bar';
+export type FontFamily = "jetbrains-mono" | "fira-code" | "pixel-mplus";
+
+export type CursorShape = "block" | "underline" | "bar";
 
 export interface OutputEvent {
   nativeEvent: {
@@ -67,7 +70,14 @@ export interface NativeTerminalViewProps extends ViewProps {
   onTitleChanged?: (event: TitleChangedEvent) => void;
   onResize?: (event: ResizeEvent) => void;
   onScrollStateChanged?: (event: ScrollStateChangedEvent) => void;
+  gpuRendering?: boolean;
 }
 
-export const NativeTerminalView =
-  requireNativeViewManager<NativeTerminalViewProps>('TerminalView');
+const WebFallback = (_props: NativeTerminalViewProps) => null;
+
+// Cast to allow ref since ViewProps has it
+const AndroidView = isAndroid
+  ? (requireNativeViewManager("TerminalView") as any)
+  : null;
+
+export const NativeTerminalView = AndroidView || WebFallback;

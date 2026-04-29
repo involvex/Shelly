@@ -11,7 +11,7 @@
 - **技術スタック**: Expo 54 / React Native 0.81 / TypeScript (strict)
 - **UI**: NativeWind (TailwindCSS 3)
 - **状態管理**: Zustand
-- **パッケージマネージャ**: pnpm
+- **パッケージマネージャ**: bun
 - **ナビゲーション**: expo-router v6（ファイルベース）
 - **アニメーション**: React Native Reanimated v4
 - **i18n**: expo-localization + Zustand（日英対応）
@@ -199,7 +199,7 @@ Shelly/
 
 ```bash
 # ローカル開発（Web）
-pnpm start --web
+bun start --web
 
 # APKビルド（GitHub Actions）
 git add . && git commit -m "description" && git push

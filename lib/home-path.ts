@@ -9,10 +9,11 @@
  * and provides it to all JS modules that need it.
  */
 
-import { logInfo, logError } from '@/lib/debug-logger';
+import { logInfo, logError } from "@/lib/debug-logger";
+import { getTerminalEmulator } from "@/lib/native-module-loader";
 
 // Fallback: will be overwritten once execCommand resolves the real path
-let cachedHome: string = '/data/user/0/dev.shelly.terminal/files/home';
+let cachedHome: string = "/data/user/0/dev.shelly.terminal/files/home";
 let resolved = false;
 
 /**
@@ -22,16 +23,16 @@ let resolved = false;
 export async function initHomePath(): Promise<void> {
   if (resolved) return;
   try {
-    const TerminalEmulator = require('@/modules/terminal-emulator/src/TerminalEmulatorModule').default;
-    const result = await TerminalEmulator.execCommand('echo $HOME');
+    const TerminalEmulator = await getTerminalEmulator();
+    const result = await TerminalEmulator.execCommand("echo $HOME");
     const home = result.stdout?.trim();
-    if (home && home.startsWith('/')) {
+    if (home && home.startsWith("/")) {
       cachedHome = home;
       resolved = true;
-      logInfo('HomePath', 'Resolved: ' + cachedHome);
+      logInfo("HomePath", "Resolved: " + cachedHome);
     }
   } catch (e: any) {
-    logError('HomePath', 'Failed to resolve HOME, using fallback', e);
+    logError("HomePath", "Failed to resolve HOME, using fallback", e);
   }
 }
 

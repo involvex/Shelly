@@ -1,4 +1,7 @@
-import { NativeModule, requireNativeModule } from 'expo-modules-core';
+import { NativeModule, requireNativeModule } from "expo-modules-core";
+import { Platform } from "react-native";
+
+const isWeb = Platform.OS === "web";
 
 export interface SessionConfig {
   sessionId: string;
@@ -10,7 +13,11 @@ declare class TerminalEmulatorModuleType extends NativeModule {
   createSession(config: SessionConfig): Promise<string>;
   destroySession(sessionId: string): Promise<void>;
   writeToSession(sessionId: string, data: string): Promise<void>;
-  sendKeyEvent(sessionId: string, keyCode: number, modifiers: number): Promise<void>;
+  sendKeyEvent(
+    sessionId: string,
+    keyCode: number,
+    modifiers: number,
+  ): Promise<void>;
   resizeSession(sessionId: string, rows: number, cols: number): Promise<void>;
   isSessionAlive(sessionId: string): Promise<boolean>;
   hasEmulator(sessionId: string): Promise<boolean>;
@@ -23,9 +30,49 @@ declare class TerminalEmulatorModuleType extends NativeModule {
   isIgnoringBatteryOptimizations(): Promise<boolean>;
   requestBatteryOptimizationExemption(): Promise<void>;
   testExecve(): Promise<{ success: boolean; result?: string; error?: string }>;
-  scheduleAgent(agentId: string, intervalMs: number, triggerAtMs: number): Promise<void>;
+  scheduleAgent(
+    agentId: string,
+    intervalMs: number,
+    triggerAtMs: number,
+  ): Promise<void>;
   cancelAgent(agentId: string): Promise<void>;
-  execCommand(command: string, timeoutMs?: number): Promise<{ exitCode: number; stdout: string; stderr: string }>;
+  execCommand(
+    command: string,
+    timeoutMs?: number,
+  ): Promise<{ exitCode: number; stdout: string; stderr: string }>;
 }
 
-export default requireNativeModule<TerminalEmulatorModuleType>('TerminalEmulator');
+const WebFallback: TerminalEmulatorModuleType = {
+  createSession: async () => "",
+  destroySession: async () => {},
+  writeToSession: async () => {},
+  sendKeyEvent: async () => {},
+  resizeSession: async () => {},
+  isSessionAlive: async () => false,
+  hasEmulator: async () => false,
+  getTranscriptText: async () => "",
+  writeToEmulator: async () => {},
+  getSessionTitle: async () => "",
+  startSessionService: async () => {},
+  stopSessionService: async () => {},
+  updateSessionNotification: async () => {},
+  isIgnoringBatteryOptimizations: async () => false,
+  requestBatteryOptimizationExemption: async () => {},
+  testExecve: async () => ({ success: false, error: "Web platform" }),
+  scheduleAgent: async () => {},
+  cancelAgent: async () => {},
+  execCommand: async () => ({
+    exitCode: 1,
+    stdout: "",
+    stderr: "Web platform",
+  }),
+  addListener: () => ({ remove: () => {} }),
+  removeListener: () => {},
+  removeAllListeners: () => {},
+  emit: () => false,
+  listenerCount: () => 0,
+};
+
+export default isWeb
+  ? WebFallback
+  : requireNativeModule<TerminalEmulatorModuleType>("TerminalEmulator");

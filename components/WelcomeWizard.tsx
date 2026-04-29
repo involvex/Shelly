@@ -18,7 +18,7 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-} from 'react-native';
+ ActivityIndicator } from 'react-native';
 import Animated, {
   FadeInDown,
   FadeInRight,
@@ -27,7 +27,7 @@ import Animated, {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from '@/lib/i18n';
-import { ActivityIndicator } from 'react-native';
+
 import { AuthWizard } from '@/components/AuthWizard';
 import type { AuthToolId } from '@/lib/cli-auth';
 import { logInfo, logError, logLifecycle } from '@/lib/debug-logger';

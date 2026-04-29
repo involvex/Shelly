@@ -1,6 +1,7 @@
-import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Snippet, SnippetScope, SnippetSortOrder } from './types';
+import { create } from "zustand";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
+import { Snippet, SnippetScope, SnippetSortOrder } from "./types";
 
 // ─── Store Type ───────────────────────────────────────────────────────────────
 
@@ -15,7 +16,10 @@ interface SnippetStore {
     tags?: string[];
     scope?: SnippetScope;
   }) => Snippet;
-  updateSnippet: (id: string, updates: Partial<Pick<Snippet, 'title' | 'command' | 'tags' | 'scope'>>) => void;
+  updateSnippet: (
+    id: string,
+    updates: Partial<Pick<Snippet, "title" | "command" | "tags" | "scope">>,
+  ) => void;
   deleteSnippet: (id: string) => void;
   incrementUseCount: (id: string) => void;
   setSortOrder: (order: SnippetSortOrder) => void;
@@ -45,7 +49,7 @@ interface SnippetStore {
 /** Parse a comma-separated tag string into a trimmed, non-empty array. */
 export function parseTags(raw: string): string[] {
   return raw
-    .split(',')
+    .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
 }
@@ -58,17 +62,17 @@ function generateTitle(command: string): string {
   return command.slice(0, 40).trim();
 }
 
-const STORAGE_KEY = '@shelly/snippets';
-const SORT_KEY = '@shelly/snippets_sort';
+const STORAGE_KEY = "@shelly/snippets";
+const SORT_KEY = "@shelly/snippets_sort";
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useSnippetStore = create<SnippetStore>((set, get) => ({
   snippets: [],
-  sortOrder: 'lastUsed',
+  sortOrder: "lastUsed",
   isLoaded: false,
 
-  addSnippet: ({ command, title, tags = [], scope = 'global' }) => {
+  addSnippet: ({ command, title, tags = [], scope = "global" }) => {
     const now = Date.now();
     const snippet: Snippet = {
       id: generateId(),
@@ -88,7 +92,7 @@ export const useSnippetStore = create<SnippetStore>((set, get) => ({
   updateSnippet: (id, updates) => {
     set((s) => ({
       snippets: s.snippets.map((sn) =>
-        sn.id === id ? { ...sn, ...updates } : sn
+        sn.id === id ? { ...sn, ...updates } : sn,
       ),
     }));
     get()._persist();
@@ -104,7 +108,7 @@ export const useSnippetStore = create<SnippetStore>((set, get) => ({
       snippets: s.snippets.map((sn) =>
         sn.id === id
           ? { ...sn, useCount: sn.useCount + 1, lastUsedAt: Date.now() }
-          : sn
+          : sn,
       ),
     }));
     get()._persist();
@@ -128,13 +132,13 @@ export const useSnippetStore = create<SnippetStore>((set, get) => ({
     const { snippets, sortOrder } = get();
     const sorted = [...snippets];
     switch (sortOrder) {
-      case 'lastUsed':
+      case "lastUsed":
         sorted.sort((a, b) => b.lastUsedAt - a.lastUsedAt);
         break;
-      case 'useCount':
+      case "useCount":
         sorted.sort((a, b) => b.useCount - a.useCount);
         break;
-      case 'createdAt':
+      case "createdAt":
         sorted.sort((a, b) => b.createdAt - a.createdAt);
         break;
     }
@@ -148,17 +152,17 @@ export const useSnippetStore = create<SnippetStore>((set, get) => ({
       (s) =>
         s.title.toLowerCase().includes(q) ||
         s.command.toLowerCase().includes(q) ||
-        s.tags.some((t) => t.toLowerCase().includes(q))
+        s.tags.some((t) => t.toLowerCase().includes(q)),
     );
     const sorted = [...filtered];
     switch (sortOrder) {
-      case 'lastUsed':
+      case "lastUsed":
         sorted.sort((a, b) => b.lastUsedAt - a.lastUsedAt);
         break;
-      case 'useCount':
+      case "useCount":
         sorted.sort((a, b) => b.useCount - a.useCount);
         break;
-      case 'createdAt':
+      case "createdAt":
         sorted.sort((a, b) => b.createdAt - a.createdAt);
         break;
     }
@@ -174,7 +178,7 @@ export const useSnippetStore = create<SnippetStore>((set, get) => ({
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(get().snippets));
     } catch (e) {
-      console.warn('[SnippetStore] persist failed', e);
+      console.warn("[SnippetStore] persist failed", e);
     }
   },
 
@@ -188,10 +192,12 @@ export const useSnippetStore = create<SnippetStore>((set, get) => ({
       if (sort) set({ sortOrder: sort as SnippetSortOrder });
       set({ isLoaded: true });
     } catch (e) {
-      console.warn('[SnippetStore] load failed', e);
+      console.warn("[SnippetStore] load failed", e);
     }
   },
 }));
 
-// Auto-load on import
-useSnippetStore.getState()._load();
+// Auto-load on import (skip on web via Expo Router SSR)
+if (Platform.OS !== "web") {
+  useSnippetStore.getState()._load();
+}

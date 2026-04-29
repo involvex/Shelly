@@ -61,7 +61,7 @@ export function Sidebar() {
 
   // Derive recent completed tasks from run history
   const recentTasks = React.useMemo(() => {
-    const allLogs: Array<{ id: string; name: string; timestamp: number }> = [];
+    const allLogs: { id: string; name: string; timestamp: number }[] = [];
     for (const [agentId, logs] of Object.entries(runHistory)) {
       const agent = agents.find((a) => a.id === agentId);
       for (const log of logs) {

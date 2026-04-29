@@ -5,42 +5,33 @@
  * Narrow mode (isWide=false): horizontal chip strip, max 3 items, full-width
  */
 
-import React, { useCallback } from 'react';
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import Animated, {
-  FadeIn,
-  SlideInDown,
-} from 'react-native-reanimated';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import React, { useCallback } from "react";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeIn, SlideInDown } from "react-native-reanimated";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-import type { CompletionItem } from '@/lib/autocomplete-engine';
-import { colors as C, fonts as F, sizes as S } from '@/theme.config';
+import type { CompletionItem } from "@/lib/autocomplete-engine";
+import { colors as C, fonts as F, sizes as S } from "@/theme.config";
 
 // ── Icon mapping ──────────────────────────────────────────────────────────────
 
-type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
+type MaterialIconName = React.ComponentProps<typeof MaterialIcons>["name"];
 
-const KIND_ICON: Record<CompletionItem['kind'], MaterialIconName> = {
-  command: 'terminal',
-  flag:    'flag',
-  path:    'folder',
-  branch:  'call-split',
-  history: 'history',
+const KIND_ICON: Record<CompletionItem["kind"], MaterialIconName> = {
+  command: "terminal",
+  flag: "flag",
+  path: "folder",
+  branch: "call-split",
+  history: "history",
 };
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface AutocompletePopupProps {
-  items:    CompletionItem[];
+  items: CompletionItem[];
   onSelect: (item: CompletionItem) => void;
-  visible:  boolean;
-  isWide:   boolean;
+  visible: boolean;
+  isWide: boolean;
 }
 
 // ── Wide-mode row ─────────────────────────────────────────────────────────────
@@ -49,20 +40,29 @@ const WideRow = React.memo(function WideRow({
   item,
   onPress,
 }: {
-  item:    CompletionItem;
+  item: CompletionItem;
   onPress: () => void;
 }) {
-  const iconName = KIND_ICON[item.kind] ?? 'terminal';
+  const iconName = KIND_ICON[item.kind] ?? "terminal";
   return (
     <Pressable
       style={({ pressed }) => [styles.wideRow, pressed && styles.rowPressed]}
       onPress={onPress}
-      android_ripple={{ color: '#333' }}
+      android_ripple={{ color: "#333" }}
     >
-      <MaterialIcons name={iconName} size={15} color="#888" style={styles.rowIcon} />
-      <Text style={styles.labelText} numberOfLines={1}>{item.label}</Text>
+      <MaterialIcons
+        name={iconName}
+        size={15}
+        color="#888"
+        style={styles.rowIcon}
+      />
+      <Text style={styles.labelText} numberOfLines={1}>
+        {item.label}
+      </Text>
       {item.detail ? (
-        <Text style={styles.detailText} numberOfLines={1}>{item.detail}</Text>
+        <Text style={styles.detailText} numberOfLines={1}>
+          {item.detail}
+        </Text>
       ) : null}
     </Pressable>
   );
@@ -74,18 +74,25 @@ const NarrowChip = React.memo(function NarrowChip({
   item,
   onPress,
 }: {
-  item:    CompletionItem;
+  item: CompletionItem;
   onPress: () => void;
 }) {
-  const iconName = KIND_ICON[item.kind] ?? 'terminal';
+  const iconName = KIND_ICON[item.kind] ?? "terminal";
   return (
     <Pressable
       style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
       onPress={onPress}
-      android_ripple={{ color: '#333' }}
+      android_ripple={{ color: "#333" }}
     >
-      <MaterialIcons name={iconName} size={13} color="#888" style={styles.chipIcon} />
-      <Text style={styles.chipLabel} numberOfLines={1}>{item.label}</Text>
+      <MaterialIcons
+        name={iconName}
+        size={13}
+        color="#888"
+        style={styles.chipIcon}
+      />
+      <Text style={styles.chipLabel} numberOfLines={1}>
+        {item.label}
+      </Text>
     </Pressable>
   );
 });
@@ -98,8 +105,6 @@ export function AutocompletePopup({
   visible,
   isWide,
 }: AutocompletePopupProps) {
-  if (!visible || items.length === 0) return null;
-
   const displayItems = isWide ? items.slice(0, 6) : items.slice(0, 3);
 
   const handleSelect = useCallback(
@@ -108,6 +113,8 @@ export function AutocompletePopup({
     },
     [onSelect],
   );
+
+  if (!visible || items.length === 0) return null;
 
   if (isWide) {
     return (
@@ -152,102 +159,102 @@ export function AutocompletePopup({
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const SURFACE    = C.border;
-const BORDER     = '#333333';
-const ACCENT     = '#E8E8E8';
-const MUTED      = '#777777';
-const RADIUS     = 8;
+const SURFACE = C.border;
+const BORDER = "#333333";
+const ACCENT = "#E8E8E8";
+const MUTED = "#777777";
+const RADIUS = 8;
 const SHADOW = {
-  shadowColor:   '#000',
-  shadowOffset:  { width: 0, height: -2 },
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: -2 },
   shadowOpacity: 0.35,
-  shadowRadius:  6,
-  elevation:     8,
+  shadowRadius: 6,
+  elevation: 8,
 } as const;
 
 const styles = StyleSheet.create({
   // ── Wide ──────────────────────────────────────────────────────────────────
   wideContainer: {
-    position:        'absolute',
-    bottom:          '100%',
-    left:            0,
-    minWidth:        240,
+    position: "absolute",
+    bottom: "100%",
+    left: 0,
+    minWidth: 240,
     backgroundColor: SURFACE,
-    borderWidth:     1,
-    borderColor:     BORDER,
-    borderRadius:    RADIUS,
-    marginBottom:    4,
-    overflow:        'hidden',
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: RADIUS,
+    marginBottom: 4,
+    overflow: "hidden",
     ...SHADOW,
   },
   wideList: {
     flexGrow: 0,
   },
   wideRow: {
-    flexDirection:  'row',
-    alignItems:     'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical:   9,
+    paddingVertical: 9,
   },
   rowPressed: {
-    backgroundColor: '#252525',
+    backgroundColor: "#252525",
   },
   rowIcon: {
     marginRight: 8,
-    flexShrink:  0,
+    flexShrink: 0,
   },
   labelText: {
-    flex:       1,
-    color:      ACCENT,
-    fontSize:   13,
-    fontFamily: 'monospace',
+    flex: 1,
+    color: ACCENT,
+    fontSize: 13,
+    fontFamily: "monospace",
   },
   detailText: {
-    color:      MUTED,
-    fontSize:   11,
-    fontFamily: 'monospace',
+    color: MUTED,
+    fontSize: 11,
+    fontFamily: "monospace",
     marginLeft: 8,
     flexShrink: 1,
   },
 
   // ── Narrow ────────────────────────────────────────────────────────────────
   narrowContainer: {
-    position:        'absolute',
-    bottom:          '100%',
-    left:            0,
-    right:           0,
+    position: "absolute",
+    bottom: "100%",
+    left: 0,
+    right: 0,
     backgroundColor: SURFACE,
-    borderTopWidth:  1,
-    borderColor:     BORDER,
-    marginBottom:    2,
+    borderTopWidth: 1,
+    borderColor: BORDER,
+    marginBottom: 2,
     ...SHADOW,
   },
   narrowContent: {
     paddingHorizontal: 8,
-    paddingVertical:   6,
-    gap:               6,
+    paddingVertical: 6,
+    gap: 6,
   },
   chip: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    backgroundColor:   '#252525',
-    borderWidth:       1,
-    borderColor:       BORDER,
-    borderRadius:      16,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#252525",
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 16,
     paddingHorizontal: 10,
-    paddingVertical:   5,
+    paddingVertical: 5,
   },
   chipPressed: {
-    backgroundColor: '#303030',
+    backgroundColor: "#303030",
   },
   chipIcon: {
     marginRight: 4,
-    flexShrink:  0,
+    flexShrink: 0,
   },
   chipLabel: {
-    color:      ACCENT,
-    fontSize:   12,
-    fontFamily: 'monospace',
-    maxWidth:   120,
+    color: ACCENT,
+    fontSize: 12,
+    fontFamily: "monospace",
+    maxWidth: 120,
   },
 });

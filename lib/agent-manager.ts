@@ -7,7 +7,7 @@ import { Agent, ToolChoice } from '@/store/types';
 import { suggestTool, toolChoiceToLabel } from './agent-tool-router';
 import { generateRunScript, generateRunNowCommand, generateStopCommand } from './agent-executor';
 import { installSchedule, uninstallSchedule } from './agent-scheduler';
-import * as Notifications from 'expo-notifications';
+// import * as Notifications from 'expo-notifications';
 
 const AGENTS_DIR = '$HOME/.shelly/agents';
 
@@ -170,14 +170,14 @@ export async function notifyAgentResult(
   summary: string
 ): Promise<void> {
   const icon = status === 'success' ? '✅' : status === 'error' ? '❌' : '⏭️';
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: `${icon} ${agent.name}`,
-      body: summary,
-      data: { agentId: agent.id },
-    },
-    trigger: null,
-  });
+  // await Notifications.scheduleNotificationAsync({
+  //   content: {
+  //     title: `${icon} ${agent.name}`,
+  //     body: summary,
+  //     data: { agentId: agent.id },
+  //   },
+  //   trigger: null,
+  // });
 }
 
 /**

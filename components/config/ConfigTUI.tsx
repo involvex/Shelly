@@ -29,8 +29,8 @@ import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSettingsStore } from '@/store/settings-store';
 import { useCosmeticStore, SoundProfile, FontFamily } from '@/store/cosmetic-store';
-import { getAllThemes } from '@/lib/theme-engine';
-import { useThemeStore } from '@/lib/theme-engine';
+import { getAllThemes , useThemeStore } from '@/lib/theme-engine';
+
 import { TERMINAL_THEME_NAMES } from '@/lib/terminal-theme';
 import { useI18n, AVAILABLE_LOCALES } from '@/lib/i18n';
 import { useUsageStore } from '@/store/usage-store';

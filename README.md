@@ -58,10 +58,10 @@ Download the latest APK from [**GitHub Releases**](https://github.com/RYOITABASH
 
 ```bash
 git clone https://github.com/RYOITABASHI/Shelly.git && cd Shelly
-pnpm install && pnpm android
+bun install && bun android
 ```
 
-> **Requirements:** Android device. For building from source: Node.js 22+, pnpm, Android NDK r27+. Expo Go is not supported — Shelly uses native Kotlin/C modules.
+> **Requirements:** Android device. For building from source: Node.js 22+, Bun, Android NDK r27+. Expo Go is not supported — Shelly uses native Kotlin/C modules.
 >
 > Termux is not required. Shelly ships with bash, Node.js, Python 3, git, curl, and sqlite3. For tools beyond the bundled set, Termux can be used alongside Shelly.
 

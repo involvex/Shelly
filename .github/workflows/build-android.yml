@@ -15,11 +15,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install pnpm
-        run: npm install -g pnpm@9.12.0
+      - name: Install bun
+        run: npm install -g bun
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8

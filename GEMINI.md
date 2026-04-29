@@ -34,7 +34,7 @@ Layout: AgentBar (top) + Sidebar (left) + PaneContainer (center, up to 4 panes) 
 ## Build
 
 ```bash
-pnpm install && pnpm android        # local dev
+bun install && bun android        # local dev
 git push origin main                 # triggers GitHub Actions APK build
 ```
 

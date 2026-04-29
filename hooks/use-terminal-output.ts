@@ -7,17 +7,17 @@
  * approval prompts to show ApprovalBubble (Wide mode),
  * and error output to show ErrorSummaryBubble (Wide mode).
  */
-import { useEffect, useRef } from 'react';
-import TerminalEmulator from '@/modules/terminal-emulator';
-import { useExecutionLogStore } from '@/store/execution-log-store';
-import { detectLocalhostUrl } from '@/lib/localhost-detector';
-import { usePreviewStore } from '@/store/preview-store';
-import { useSavepointStore } from '@/store/savepoint-store';
-import { useChatStore } from '@/store/chat-store';
-import { detectApprovalPrompt } from '@/lib/realtime-translate';
-import { useDeviceLayout } from '@/hooks/use-device-layout';
-import { generateId } from '@/lib/id';
-import { diagnosePackageError } from '@/lib/package-doctor';
+import { useEffect, useRef } from "react";
+import { TerminalEmulator } from "@/lib/native-module-loader";
+import { useExecutionLogStore } from "@/store/execution-log-store";
+import { detectLocalhostUrl } from "@/lib/localhost-detector";
+import { usePreviewStore } from "@/store/preview-store";
+import { useSavepointStore } from "@/store/savepoint-store";
+import { useChatStore } from "@/store/chat-store";
+import { detectApprovalPrompt } from "@/lib/realtime-translate";
+import { useDeviceLayout } from "@/hooks/use-device-layout";
+import { generateId } from "@/lib/id";
+import { diagnosePackageError } from "@/lib/package-doctor";
 
 // Patterns indicating file changes in PTY output (with capturing groups for file paths)
 const FILE_CHANGE_OUTPUT = [
@@ -38,7 +38,7 @@ const ERROR_OUTPUT_PATTERNS = [
   /panic:/,
   /fatal:/i,
   /SyntaxError:|TypeError:|ReferenceError:|RangeError:/,
-  /error\[E\d+\]:/,  // Rust compiler errors
+  /error\[E\d+\]:/, // Rust compiler errors
   /FAILED|BUILD FAILED/,
   /Cannot find module/,
   /Module not found/,
@@ -71,118 +71,133 @@ export function useTerminalOutput() {
   const BATCH_INTERVAL = 50; // 50ms batching
 
   useEffect(() => {
-    const sub = TerminalEmulator.addListener('onSessionOutput', (event: { sessionId: string; data: string }) => {
-      if (!event.data) return;
+    const sub = (TerminalEmulator as any).addListener(
+      "onSessionOutput",
+      (event: { sessionId: string; data: string }) => {
+        if (!event.data) return;
 
-      // Always add to execution log immediately (lightweight)
-      const lines = event.data.split('\n');
-      for (const line of lines) {
-        addTerminalOutput(line, event.sessionId);
-      }
+        // Always add to execution log immediately (lightweight)
+        const lines = event.data.split("\n");
+        for (const line of lines) {
+          addTerminalOutput(line, event.sessionId);
+        }
 
-      // Batch lines for expensive pattern analysis
-      batchBuffer.current.push(...lines);
-      if (batchTimer.current) return; // Already scheduled
-      batchTimer.current = setTimeout(() => {
-        batchTimer.current = null;
-        const batch = batchBuffer.current;
-        batchBuffer.current = [];
+        // Batch lines for expensive pattern analysis
+        batchBuffer.current.push(...lines);
+        if (batchTimer.current) return; // Already scheduled
+        batchTimer.current = setTimeout(() => {
+          batchTimer.current = null;
+          const batch = batchBuffer.current;
+          batchBuffer.current = [];
 
-        for (const line of batch) {
-          // Detect localhost URLs for preview offers
-          const url = detectLocalhostUrl(line);
-          if (url) {
-            usePreviewStore.getState().offerPreview(url, 'localhost');
-          }
-
-          // Detect file-changing output → request savepoint + notify preview
-          for (const pattern of FILE_CHANGE_OUTPUT) {
-            const match = pattern.exec(line);
-            if (match) {
-              if (match[1]) {
-                usePreviewStore.getState().notifyFileChange(match[1]);
-              }
-              if (savepointDebounce.current) clearTimeout(savepointDebounce.current);
-              savepointDebounce.current = setTimeout(() => {
-                useSavepointStore.getState().requestSavepoint('file-change-detected');
-              }, 5000);
-              break;
+          for (const line of batch) {
+            // Detect localhost URLs for preview offers
+            const url = detectLocalhostUrl(line);
+            if (url) {
+              usePreviewStore.getState().offerPreview(url, "localhost");
             }
-          }
 
-          // Wide mode only: detect approval prompts
-          if (isWide && detectApprovalPrompt(line)) {
-            if (approvalDebounce.current) clearTimeout(approvalDebounce.current);
-            approvalDebounce.current = setTimeout(() => {
-              const store = useChatStore.getState();
-              const session = store.getActiveSession();
-              if (!session) return;
-              store.addMessage(session.id, {
-                id: generateId(),
-                role: 'system',
-                content: '',
-                timestamp: Date.now(),
-                approvalData: {
-                  sessionId: event.sessionId,
-                  command: line.trim(),
-                  translation: '',
-                  dangerLevel: 'MEDIUM',
-                },
-              });
-            }, 300);
-          }
-
-          // Wide mode only: detect error output
-          if (isWide) {
-            for (const pattern of ERROR_OUTPUT_PATTERNS) {
-              if (pattern.test(line)) {
-                errorAccum.current.push(line.replace(/\x1b\[[0-9;]*m/g, ''));
-                if (errorDebounce.current) clearTimeout(errorDebounce.current);
-                errorDebounce.current = setTimeout(() => {
-                  const errorText = errorAccum.current.join('\n');
-                  errorAccum.current = [];
-                  const store = useChatStore.getState();
-                  const session = store.getActiveSession();
-                  if (!session) return;
-                  store.addMessage(session.id, {
-                    id: generateId(),
-                    role: 'system',
-                    content: '',
-                    timestamp: Date.now(),
-                    errorSummaryData: { errorText, translation: '', provider: '' },
-                  });
-                }, 2000);
+            // Detect file-changing output → request savepoint + notify preview
+            for (const pattern of FILE_CHANGE_OUTPUT) {
+              const match = pattern.exec(line);
+              if (match) {
+                if (match[1]) {
+                  usePreviewStore.getState().notifyFileChange(match[1]);
+                }
+                if (savepointDebounce.current)
+                  clearTimeout(savepointDebounce.current);
+                savepointDebounce.current = setTimeout(() => {
+                  useSavepointStore
+                    .getState()
+                    .requestSavepoint("file-change-detected");
+                }, 5000);
                 break;
               }
             }
-          }
 
-          // PackageDoctor: detect package manager errors
-          for (const pattern of PACKAGE_ERROR_PATTERNS) {
-            if (pattern.test(line)) {
-              pkgErrorAccum.current.push(line);
-              if (pkgErrorDebounce.current) clearTimeout(pkgErrorDebounce.current);
-              pkgErrorDebounce.current = setTimeout(() => {
-                const stderr = pkgErrorAccum.current.join('\n');
-                pkgErrorAccum.current = [];
-                const fix = diagnosePackageError(stderr);
-                if (!fix) return;
+            // Wide mode only: detect approval prompts
+            if (isWide && detectApprovalPrompt(line)) {
+              if (approvalDebounce.current)
+                clearTimeout(approvalDebounce.current);
+              approvalDebounce.current = setTimeout(() => {
                 const store = useChatStore.getState();
                 const session = store.getActiveSession();
                 if (!session) return;
                 store.addMessage(session.id, {
                   id: generateId(),
-                  role: 'system',
-                  content: `🔧 **Package Doctor**: ${fix.message}\n\nSuggested fix: \`${fix.fix}\`${fix.autoRun ? '\n_(Auto-repair available)_' : ''}`,
+                  role: "system",
+                  content: "",
                   timestamp: Date.now(),
+                  approvalData: {
+                    sessionId: event.sessionId,
+                    command: line.trim(),
+                    translation: "",
+                    dangerLevel: "MEDIUM",
+                  },
                 });
-              }, 1500);
-              break;
+              }, 300);
+            }
+
+            // Wide mode only: detect error output
+            if (isWide) {
+              for (const pattern of ERROR_OUTPUT_PATTERNS) {
+                if (pattern.test(line)) {
+                  errorAccum.current.push(
+                    line.replace(String.raw`[\x1b\[0-9;]*m`, ""),
+                  );
+                  if (errorDebounce.current)
+                    clearTimeout(errorDebounce.current);
+                  errorDebounce.current = setTimeout(() => {
+                    const errorText = errorAccum.current.join("\n");
+                    errorAccum.current = [];
+                    const store = useChatStore.getState();
+                    const session = store.getActiveSession();
+                    if (!session) return;
+                    store.addMessage(session.id, {
+                      id: generateId(),
+                      role: "system",
+                      content: "",
+                      timestamp: Date.now(),
+                      errorSummaryData: {
+                        errorText,
+                        translation: "",
+                        provider: "",
+                      },
+                    });
+                  }, 2000);
+                  break;
+                }
+              }
+            }
+
+            // PackageDoctor: detect package manager errors
+            for (const pattern of PACKAGE_ERROR_PATTERNS) {
+              if (pattern.test(line)) {
+                pkgErrorAccum.current.push(line);
+                if (pkgErrorDebounce.current)
+                  clearTimeout(pkgErrorDebounce.current);
+                pkgErrorDebounce.current = setTimeout(() => {
+                  const stderr = pkgErrorAccum.current.join("\n");
+                  pkgErrorAccum.current = [];
+                  const fix = diagnosePackageError(stderr);
+                  if (!fix) return;
+                  const store = useChatStore.getState();
+                  const session = store.getActiveSession();
+                  if (!session) return;
+                  store.addMessage(session.id, {
+                    id: generateId(),
+                    role: "system",
+                    content: `🔧 **Package Doctor**: ${fix.message}\n\nSuggested fix: \`${fix.fix}\`${fix.autoRun ? "\n_(Auto-repair available)_" : ""}`,
+                    timestamp: Date.now(),
+                  });
+                }, 1500);
+                break;
+              }
             }
           }
-        }
-      }, BATCH_INTERVAL);
-    });
+        }, BATCH_INTERVAL);
+      },
+    );
     return () => {
       sub.remove();
       if (batchTimer.current) clearTimeout(batchTimer.current);

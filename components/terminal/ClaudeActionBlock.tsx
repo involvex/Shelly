@@ -1,28 +1,27 @@
 // components/terminal/ClaudeActionBlock.tsx
 // Renders Claude Code-style action badges (READ, EDIT, BASH) matching mock design.
 // Used inline in terminal output to replace plain-text action lines.
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { colors as C, fonts as F, sizes as S } from '@/theme.config';
+import React from "react";
+import { View, Text, Pressable, StyleSheet } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { colors as C, fonts as F, sizes as S } from "@/theme.config";
 
-
-export type ActionType = 'read' | 'edit' | 'bash' | 'autosave' | 'tip';
+export type ActionType = "read" | "edit" | "bash" | "autosave" | "tip";
 
 const ACTION_COLORS: Record<ActionType, string> = {
   read: C.accent,
-  edit: '#FFB86C',
-  bash: '#FF5555',
-  autosave: '#50FA7B',
+  edit: "#FFB86C",
+  bash: "#FF5555",
+  autosave: "#50FA7B",
   tip: C.text2,
 };
 
 const ACTION_ICONS: Record<ActionType, string> = {
-  read: 'visibility',
-  edit: 'edit',
-  bash: 'warning',
-  autosave: 'lock',
-  tip: 'lightbulb',
+  read: "visibility",
+  edit: "edit",
+  bash: "warning",
+  autosave: "lock",
+  tip: "lightbulb",
 };
 
 // ─── Read Block ──────────────────────────────────────────────────────────────
@@ -36,13 +35,22 @@ type ReadBlockProps = {
   totalLines?: number;
 };
 
-export function ReadActionBlock({ filePath, duration, previewLines, totalLines }: ReadBlockProps) {
+export function ReadActionBlock({
+  filePath,
+  duration,
+  previewLines,
+  totalLines,
+}: ReadBlockProps) {
   return (
     <View style={styles.readContainer}>
       <View style={styles.actionRow}>
         <View style={[styles.dot, { backgroundColor: ACTION_COLORS.read }]} />
-        <Text style={[styles.actionLabel, { color: ACTION_COLORS.read }]}>READ</Text>
-        <Text style={styles.actionPath} numberOfLines={1}>{filePath}</Text>
+        <Text style={[styles.actionLabel, { color: ACTION_COLORS.read }]}>
+          READ
+        </Text>
+        <Text style={styles.actionPath} numberOfLines={1}>
+          {filePath}
+        </Text>
         <View style={styles.spacer} />
         {duration && <Text style={styles.actionDuration}>{duration}</Text>}
         <MaterialIcons name="content-copy" size={12} color="#6B7280" />
@@ -51,10 +59,14 @@ export function ReadActionBlock({ filePath, duration, previewLines, totalLines }
       {previewLines && previewLines.length > 0 && (
         <View style={styles.codePreview}>
           {previewLines.map((line, i) => (
-            <Text key={i} style={styles.codePreviewLine} numberOfLines={1}>{line}</Text>
+            <Text key={i} style={styles.codePreviewLine} numberOfLines={1}>
+              {line}
+            </Text>
           ))}
           {totalLines != null && (
-            <Text style={styles.codePreviewEllipsis}>// ... {totalLines} LINES</Text>
+            <Text style={styles.codePreviewEllipsis}>
+              {/* */} {totalLines} LINES
+            </Text>
           )}
         </View>
       )}
@@ -74,13 +86,24 @@ type EditBlockProps = {
   isComplete?: boolean;
 };
 
-export function EditActionBlock({ filePath, removedLines, addedLines, onAccept, onReject, isComplete }: EditBlockProps) {
+export function EditActionBlock({
+  filePath,
+  removedLines,
+  addedLines,
+  onAccept,
+  onReject,
+  isComplete,
+}: EditBlockProps) {
   return (
     <View style={styles.editContainer}>
       <View style={styles.actionRow}>
         <View style={[styles.dot, { backgroundColor: ACTION_COLORS.edit }]} />
-        <Text style={[styles.actionLabel, { color: ACTION_COLORS.edit }]}>EDIT</Text>
-        <Text style={styles.actionPath} numberOfLines={1}>{filePath}</Text>
+        <Text style={[styles.actionLabel, { color: ACTION_COLORS.edit }]}>
+          EDIT
+        </Text>
+        <Text style={styles.actionPath} numberOfLines={1}>
+          {filePath}
+        </Text>
         <View style={styles.spacer} />
         {isComplete ? (
           <MaterialIcons name="check" size={14} color={C.accent} />
@@ -89,12 +112,20 @@ export function EditActionBlock({ filePath, removedLines, addedLines, onAccept, 
         )}
       </View>
       {/* Diff lines */}
-      {removedLines && removedLines.map((line, i) => (
-        <Text key={`rm-${i}`} style={styles.diffRemoved}>{'−   '}{line}</Text>
-      ))}
-      {addedLines && addedLines.map((line, i) => (
-        <Text key={`add-${i}`} style={styles.diffAdded}>{'＋   '}{line}</Text>
-      ))}
+      {removedLines &&
+        removedLines.map((line, i) => (
+          <Text key={`rm-${i}`} style={styles.diffRemoved}>
+            {"−   "}
+            {line}
+          </Text>
+        ))}
+      {addedLines &&
+        addedLines.map((line, i) => (
+          <Text key={`add-${i}`} style={styles.diffAdded}>
+            {"＋   "}
+            {line}
+          </Text>
+        ))}
       {/* Accept / Reject buttons */}
       <View style={styles.diffActions}>
         <Pressable style={styles.acceptBtn} onPress={onAccept}>
@@ -117,7 +148,12 @@ type BashConfirmProps = {
   onDeny?: () => void;
 };
 
-export function BashConfirmBlock({ command, description, onAllow, onDeny }: BashConfirmProps) {
+export function BashConfirmBlock({
+  command,
+  description,
+  onAllow,
+  onDeny,
+}: BashConfirmProps) {
   return (
     <View style={styles.bashContainer}>
       <View style={styles.bashHeader}>
@@ -126,9 +162,7 @@ export function BashConfirmBlock({ command, description, onAllow, onDeny }: Bash
         <View style={styles.spacer} />
         <Text style={styles.confirmTag}>CONFIRM?</Text>
       </View>
-      {description && (
-        <Text style={styles.bashDesc}>{description}</Text>
-      )}
+      {description && <Text style={styles.bashDesc}>{description}</Text>}
       <View style={styles.bashActions}>
         <Pressable style={styles.allowBtn} onPress={onAllow}>
           <Text style={styles.allowText}>ALLOW</Text>
@@ -149,7 +183,11 @@ type AutoSaveBarProps = {
   onViewDiff?: () => void;
 };
 
-export function AutoSaveBar({ filesChanged, onUndo, onViewDiff }: AutoSaveBarProps) {
+export function AutoSaveBar({
+  filesChanged,
+  onUndo,
+  onViewDiff,
+}: AutoSaveBarProps) {
   return (
     <View style={styles.autoSaveBar}>
       <MaterialIcons name="lock" size={12} color={ACTION_COLORS.autosave} />
@@ -193,12 +231,12 @@ export function TipBar({ message, onDismiss }: TipBarProps) {
 
 const styles = StyleSheet.create({
   actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#111',
+    backgroundColor: "#111",
     borderRadius: 6,
     marginVertical: 2,
   },
@@ -209,25 +247,25 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    fontWeight: '800',
+    fontFamily: "monospace",
+    fontWeight: "800",
     letterSpacing: 0.8,
   },
   actionPath: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    fontWeight: '500',
+    fontFamily: "monospace",
+    fontWeight: "500",
     color: C.text1,
     flexShrink: 1,
   },
   actionDuration: {
     fontSize: 9,
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
     color: C.text2,
   },
   // Read
   readContainer: {
-    backgroundColor: '#111',
+    backgroundColor: "#111",
     borderRadius: 6,
     marginVertical: 2,
   },
@@ -239,15 +277,15 @@ const styles = StyleSheet.create({
   },
   codePreviewLine: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    fontWeight: '500',
+    fontFamily: "monospace",
+    fontWeight: "500",
     color: C.text1,
     lineHeight: 16,
   },
   codePreviewEllipsis: {
     fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '500',
+    fontFamily: "monospace",
+    fontWeight: "500",
     color: C.text2,
     marginTop: 2,
   },
@@ -256,29 +294,29 @@ const styles = StyleSheet.create({
   },
   // Edit
   editContainer: {
-    backgroundColor: '#111',
+    backgroundColor: "#111",
     borderRadius: 6,
     marginVertical: 2,
     paddingBottom: 8,
   },
   diffRemoved: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#FF5555',
-    backgroundColor: 'rgba(255,85,85,0.08)',
+    fontFamily: "monospace",
+    color: "#FF5555",
+    backgroundColor: "rgba(255,85,85,0.08)",
     paddingHorizontal: 12,
     paddingVertical: 2,
   },
   diffAdded: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#50FA7B',
-    backgroundColor: 'rgba(80,250,123,0.08)',
+    fontFamily: "monospace",
+    color: "#50FA7B",
+    backgroundColor: "rgba(80,250,123,0.08)",
     paddingHorizontal: 12,
     paddingVertical: 2,
   },
   diffActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     paddingHorizontal: 12,
     paddingTop: 6,
@@ -290,14 +328,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   acceptText: {
-    color: '#000',
+    color: "#000",
     fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '800',
+    fontFamily: "monospace",
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
   rejectBtn: {
-    backgroundColor: '#333',
+    backgroundColor: "#333",
     paddingHorizontal: 14,
     paddingVertical: 4,
     borderRadius: 4,
@@ -305,49 +343,49 @@ const styles = StyleSheet.create({
   rejectText: {
     color: C.text1,
     fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '700',
+    fontFamily: "monospace",
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   // Bash confirm
   bashContainer: {
-    backgroundColor: '#111',
+    backgroundColor: "#111",
     borderRadius: 6,
     marginVertical: 2,
     paddingBottom: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#FFB86C',
+    borderLeftColor: "#FFB86C",
   },
   bashHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   bashLabel: {
     fontSize: 10,
-    fontFamily: 'monospace',
-    fontWeight: '800',
-    color: '#FFB86C',
+    fontFamily: "monospace",
+    fontWeight: "800",
+    color: "#FFB86C",
     letterSpacing: 0.5,
   },
   confirmTag: {
     fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '700',
-    color: '#FF5555',
+    fontFamily: "monospace",
+    fontWeight: "700",
+    color: "#FF5555",
     letterSpacing: 0.5,
   },
   bashDesc: {
     fontSize: 10,
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
     color: C.text1,
     paddingHorizontal: 12,
     paddingBottom: 6,
   },
   bashActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     paddingHorizontal: 12,
   },
@@ -358,14 +396,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   allowText: {
-    color: '#000',
+    color: "#000",
     fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '800',
+    fontFamily: "monospace",
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
   denyBtn: {
-    backgroundColor: '#333',
+    backgroundColor: "#333",
     paddingHorizontal: 14,
     paddingVertical: 4,
     borderRadius: 4,
@@ -373,16 +411,16 @@ const styles = StyleSheet.create({
   denyText: {
     color: C.text1,
     fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '700',
+    fontFamily: "monospace",
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   // Auto-save
   autoSaveBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
-    backgroundColor: 'rgba(0,212,170,0.06)',
+    backgroundColor: "rgba(0,212,170,0.06)",
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 4,
@@ -390,24 +428,24 @@ const styles = StyleSheet.create({
   },
   autoSaveText: {
     fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '700',
-    color: '#50FA7B',
+    fontFamily: "monospace",
+    fontWeight: "700",
+    color: "#50FA7B",
     letterSpacing: 0.5,
   },
   autoSaveAction: {
     fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '700',
+    fontFamily: "monospace",
+    fontWeight: "700",
     color: C.accent,
     letterSpacing: 0.5,
     paddingHorizontal: 4,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   // Tip
   tipBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -415,8 +453,8 @@ const styles = StyleSheet.create({
   },
   tipText: {
     fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '500',
+    fontFamily: "monospace",
+    fontWeight: "500",
     color: C.text2,
     letterSpacing: 0.3,
     flex: 1,
